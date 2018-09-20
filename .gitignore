@@ -1,0 +1,15 @@
+node_modules
+#build
+*.log
+*.tmp
+*.psd
+.idea
+lib
+jsdocs
+*.DS_Store
+
+build/styles
+build/getDynamicAssetList.php
+build/*.html
+build/scripts/*
+!build/scripts/game.js
