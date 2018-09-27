@@ -1,6 +1,7 @@
 let heroesSelected = [];
 let cardsSelected = [];
 let cardsSelectedById = [];
+let heroSpheres = {spirit:0, leadership:0, tactics:0, lore:0};
 
 function start()
 {
@@ -12,11 +13,6 @@ function populateSelector(cardsAvailable)
 {
     let selector = document.getElementById("selector");
 
-    while (selector.firstChild)
-    {
-        selector.removeChild(selector.firstChild);
-    }
-
     for (let cardIdx=0; cardIdx < cardsAvailable.length; cardIdx++)
     {
         let cardData = cardsAvailable[cardIdx];
@@ -26,27 +22,70 @@ function populateSelector(cardsAvailable)
         img.cardData = cardData;
         img.onclick = addCard;
         selector.appendChild(img);
-    }
 
+        if (cardData.imagesrc === undefined)
+        {
+            console.log("test");
+        }
+    }
+}
+
+
+function addCardToDiv(container, cardData, cardClass)
+{
+    let img = document.createElement("img");
+    img.src = "https://digital.ringsdb.com" + cardData.imagesrc;
+    img.classList.add(cardClass);
+    container.appendChild(img);
 }
 
 
 function addCard(e)
 {
+    let selector = document.getElementById("selector");
+    while (selector.firstChild)
+    {
+        selector.removeChild(selector.firstChild);
+    }
+
     let cardData = e.currentTarget.cardData;
 
-    if (heroesSelected.length < 2)
+    if (cardData.type_code === "hero")
     {
         heroesSelected.push(cardData);
+        addCardToDiv(document.getElementById("selected_heroes"), cardData, "selected_hero");
+        cardsSelectedById[cardData.code] = 1;
+    }
+    else
+    {
+        cardsSelected.push(cardData);
+        addCardToDiv(document.getElementById("selected_cards"), cardData, "selected_card");
+        if (!cardsSelectedById[cardData.code])
+        {
+            cardsSelectedById[cardData.code] = 1;
+        }
+        else
+        {
+            cardsSelectedById[cardData.code]++;
+        }
+    }
+
+    if (heroesSelected.length < 3)
+    {
         populateSelector(getSelectableHeroes());
     }
     else if (cardsSelected.length < 30)
     {
-        cardsSelected.push(cardData);
+        if (cardsSelected === 0)
+        {
+            for (let heroIdx=0; heroIdx < heroesSelected.length; heroIdx++)
+            {
+                heroSpheres[heroesSelected[heroIdx].sphere_code]++;
+            }
+        }
+
         populateSelector(getSelectableHeroes2());
     }
-
-    console.log(heroesSelected);
 }
 
 
@@ -61,7 +100,7 @@ selectorFunctions =
 
 function getSelectableHeroes()
 {
-    let p1 = { name : "type_code", value : "hero", compFunc : equal };
+    let p1 = { name : "type_code", value : "hero" };
 
     let filterFunc = function(card)
     {
@@ -74,16 +113,18 @@ function getSelectableHeroes()
 
 function getSelectableHeroes2()
 {
-    let p1 = { name : "sphere_name", value : "Leadership", compFunc : equal };
-    let p2 = { name : "type_code", value : "hero", compFunc : notEqual };
-    let p3 = { name : "sphere_name", value : "Spirit", compFunc : equal };
+    let p1 = { name : "sphere_code", value : heroesSelected[0].sphere_code };
+    let p2 = { name : "sphere_code", value : heroesSelected[1].sphere_code };
+    let p3 = { name : "sphere_code", value : heroesSelected[2].sphere_code};
+    let p4 = { name : "type_code", value : "hero"};
+    let p5 = { name : "deck_limit", value : 0};
 
     let filterFunc = function(card)
     {
-        return (testPredicate(p1, card) && testPredicate(p2, card)) || testPredicate(p3, card);
+        return (testPredicate(p1, card) || testPredicate(p2, card) || testPredicate(p3, card)) && !testPredicate(p4, card) && !testPredicate(p5, card);
     };
 
-    return getSelectableCards(2, filterFunc);
+    return getSelectableCards(3, filterFunc);
 }
 
 
@@ -96,9 +137,20 @@ function getSelectableCards(number, filterFunc)
     {
         let rndIdx = Math.floor(Math.random() * filteredCards.length);
         let randomCard = filteredCards.splice(rndIdx, 1)[0];
-        selectableCards.push(randomCard);
+
+        if (!cardsSelectedById[randomCard.code])
+        {
+            selectableCards.push(randomCard);
+        }
+        else
+        {
+            if (randomCard.type_code !== "hero" && cardsSelectedById[randomCard.code] < 2)
+            {
+                selectableCards.push(randomCard);
+            }
+        }
     }
-    while(selectableCards.length < number);
+    while(selectableCards.length < number && filteredCards.length > 0);
 
     return selectableCards;
 }
@@ -107,17 +159,5 @@ function getSelectableCards(number, filterFunc)
 
 function testPredicate(predicate, card)
 {
-    return predicate.compFunc(card[predicate.name] , predicate.value);
-}
-
-
-function equal(op1, op2)
-{
-    return op1 === op2;
-}
-
-
-function notEqual(op1, op2)
-{
-    return op1 !== op2;
+    return card[predicate.name] === predicate.value;
 }
