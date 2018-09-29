@@ -1,10 +1,35 @@
-let heroesSelected = [];
-let cardsSelected = [];
-let cardsSelectedById = [];
-let heroSpheres = {spirit:0, leadership:0, tactics:0, lore:0};
+
+const heroesSelected = [];
+const cardsSelected = [];
+const cardsSelectedById = [];
+const heroSpheres = {spirit:0, leadership:0, tactics:0, lore:0};
+
+const raritiesEnum =
+    {
+        "Starter" : 0,
+        "Common" : 1,
+        "Uncommon" : 2,
+        "Rare" : 3,
+        "Legendary" : 4
+    }
+
 
 function start()
 {
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange =
+        function()
+        {
+            if (xmlHttp.readyState === 4 && xmlHttp.status === 200)
+            {
+                cardsData = JSON.parse(xmlHttp.responseText);
+                populateSelector(getSelectableHeroes());
+            }
+
+        };
+    //xmlHttp.open("GET", "https://digital.ringsdb.com/api/public/cards/", true);
+    //xmlHttp.send(null);
+
     populateSelector(getSelectableHeroes());
 }
 
@@ -76,7 +101,7 @@ function addCard(e)
     }
     else if (cardsSelected.length < 30)
     {
-        if (cardsSelected === 0)
+        if (cardsSelected.length === 0)
         {
             for (let heroIdx=0; heroIdx < heroesSelected.length; heroIdx++)
             {
@@ -84,7 +109,14 @@ function addCard(e)
             }
         }
 
-        populateSelector(getSelectableHeroes2());
+        let numCards = 3;
+        let cards;
+        do
+        {
+            cards = getRandomCards(numCards);
+        }
+        while(cards.length < numCards);
+        populateSelector(cards);
     }
 }
 
@@ -111,20 +143,107 @@ function getSelectableHeroes()
 }
 
 
-function getSelectableHeroes2()
+function getRarity()
 {
-    let p1 = { name : "sphere_code", value : heroesSelected[0].sphere_code };
-    let p2 = { name : "sphere_code", value : heroesSelected[1].sphere_code };
-    let p3 = { name : "sphere_code", value : heroesSelected[2].sphere_code};
-    let p4 = { name : "type_code", value : "hero"};
-    let p5 = { name : "deck_limit", value : 0};
+    let rarity;
+    let rnd = Math.random();
+    if (rnd < .3)
+    {
+        rarity = "Starter";
+    }
+    else if (rnd < .65)
+    {
+        rarity = "Common"
+    }
+    else if (rnd < .85)
+    {
+        rarity = "Uncommon";
+    }
+    else
+    {
+        rarity = "Rare";
+    }
+
+    return rarity;
+}
+
+
+function getRandomCards(numCards)
+{
+    let rarity = getRarity();
+    let additionalPredicates = generateAdditionalPredicates();
 
     let filterFunc = function(card)
     {
-        return (testPredicate(p1, card) || testPredicate(p2, card) || testPredicate(p3, card)) && !testPredicate(p4, card) && !testPredicate(p5, card);
+        return checkBasicRequirements(card) && checkRarity(rarity, card) && testPredicates(additionalPredicates,card);
     };
 
-    return getSelectableCards(3, filterFunc);
+    return getSelectableCards(numCards, filterFunc);
+}
+
+
+function generateAdditionalPredicates()
+{
+    let predicates = [];
+    let rnd = Math.random();
+
+    if (rnd < .5)
+    {
+        let predicate = { name : "type_code" };
+        let rnd2 = Math.random();
+        if (rnd2 < .5)
+        {
+            predicate.value = "ally";
+        }
+        else if (rnd2 < .7)
+        {
+            predicate.value = "attachment";
+        }
+        else
+        {
+            predicate.value = "event";
+        }
+        predicates.push(predicate);
+
+        console.log("Type : " + predicate.value);
+    }
+
+    return predicates;
+}
+
+
+function checkRarity(rarity, card)
+{
+    if (rarity === "Rare")
+    {
+        return raritiesEnum[rarity] <= raritiesEnum[card.rarity];
+    }
+    else
+    {
+        return raritiesEnum[rarity] === raritiesEnum[card.rarity];
+    }
+}
+
+
+function checkBasicRequirements(card)
+{
+    let p1 = { name : "type_code", value : "hero"};
+    let p2 = { name : "deck_limit", value : 0};
+
+    let val;
+    if (card.sphere_code === "neutral")
+    {
+        val = true;
+    }
+    else
+    {
+        val = heroSpheres[card.sphere_code] > 0 &&
+            card.level <= heroSpheres[card.sphere_code] &&
+            !testPredicate(p1, card) &&
+            !testPredicate(p2, card);
+    }
+
+    return val;
 }
 
 
@@ -133,7 +252,8 @@ function getSelectableCards(number, filterFunc)
     let filteredCards = cardsData.filter(filterFunc);
 
     let selectableCards = [];
-    do
+
+    while(selectableCards.length < number && filteredCards.length > 0)
     {
         let rndIdx = Math.floor(Math.random() * filteredCards.length);
         let randomCard = filteredCards.splice(rndIdx, 1)[0];
@@ -150,12 +270,22 @@ function getSelectableCards(number, filterFunc)
             }
         }
     }
-    while(selectableCards.length < number && filteredCards.length > 0);
+
 
     return selectableCards;
 }
 
 
+
+function testPredicates(predicates, card)
+{
+    let val = true;
+    for (let predIdx=0; predIdx < predicates.length; predIdx++)
+    {
+        val = val && testPredicate(predicates[predIdx], card);
+    }
+    return val;
+}
 
 function testPredicate(predicate, card)
 {
