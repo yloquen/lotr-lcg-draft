@@ -1,4 +1,6 @@
 
+const develop = false;
+
 const heroesSelected = [];
 const cardsSelected = [];
 const cardsSelectedById = [];
@@ -16,21 +18,26 @@ const raritiesEnum =
 
 function start()
 {
-    let xmlHttp = new XMLHttpRequest();
-    xmlHttp.onreadystatechange =
-        function()
-        {
-            if (xmlHttp.readyState === 4 && xmlHttp.status === 200)
+    if (develop)
+    {
+        populateSelector(getSelectableHeroes());
+    }
+    else
+    {
+        let xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange =
+            function()
             {
-                cardsData = JSON.parse(xmlHttp.responseText);
-                populateSelector(getSelectableHeroes());
-            }
+                if (xmlHttp.readyState === 4 && xmlHttp.status === 200)
+                {
+                    cardsData = JSON.parse(xmlHttp.responseText);
+                    populateSelector(getSelectableHeroes());
+                }
 
-        };
-    //xmlHttp.open("GET", "https://digital.ringsdb.com/api/public/cards/", true);
-    //xmlHttp.send(null);
-
-    populateSelector(getSelectableHeroes());
+            };
+        xmlHttp.open("GET", "https://digital.ringsdb.com/api/public/cards/", true);
+        xmlHttp.send(null);
+    }
 }
 
 
