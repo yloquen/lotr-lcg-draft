@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>Lord of the Rings LCG Drafter</title>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.0.2/TweenMax.min.js"></script>
     <script src="js/card_data.js"></script>
     <script src="js/main.js"></script>
 
@@ -25,9 +26,16 @@
         </div>
     </div>
 
+    <img src="" id="big_card">
+
     <script>
         start();
     </script>
+
+    <div id="menu">
+        <button class="menu_button" type="button">Card Pool</button>
+        <button class="menu_button" id="export_but" type="button" onclick="exportCards()">Export</button>
+    </div>
 
 </body>
 

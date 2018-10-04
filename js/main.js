@@ -1,5 +1,5 @@
 
-const develop = false;
+const develop = true;
 
 const heroesSelected = [];
 const cardsSelected = [];
@@ -7,13 +7,13 @@ const cardsSelectedById = [];
 const heroSpheres = {spirit:0, leadership:0, tactics:0, lore:0};
 
 const raritiesEnum =
-    {
-        "Starter" : 0,
-        "Common" : 1,
-        "Uncommon" : 2,
-        "Rare" : 3,
-        "Legendary" : 4
-    }
+{
+    "Starter" : 0,
+    "Common" : 1,
+    "Uncommon" : 2,
+    "Rare" : 3,
+    "Legendary" : 4
+};
 
 
 function start()
@@ -38,6 +38,40 @@ function start()
         xmlHttp.open("GET", "https://digital.ringsdb.com/api/public/cards/", true);
         xmlHttp.send(null);
     }
+
+//    document.getElementById("export_but").onclick = exportCards();
+
+    TweenMax.to(document.getElementById("big_card"), 0, {alpha:0});
+}
+
+
+function exportCards()
+{
+    let cardsAdded = {};
+    let exportList = [];
+    for (let cardIdx=0; cardIdx < cardsSelected.length; cardIdx++)
+    {
+        let cardData = cardsSelected[cardIdx];
+        if (!cardsAdded[cardData.code])
+        {
+            cardsAdded[cardData.code] = true;
+            exportList.push({name:cardData.name, qty:cardsSelectedById[cardData.code]});
+        }
+    }
+    let sorted = exportList.sort(
+        function (a, b)
+        {
+            if (a < b)
+            {
+                return -1;
+            }
+            if (a > b)
+            {
+                return 1;
+            }
+            return 0;
+        });
+    console.log(sorted);
 }
 
 
@@ -68,6 +102,20 @@ function addCardToDiv(container, cardData, cardClass)
     let img = document.createElement("img");
     img.src = "https://digital.ringsdb.com" + cardData.imagesrc;
     img.classList.add(cardClass);
+
+    img.onmouseover = function()
+    {
+        let card = document.getElementById("big_card");
+        card.src = img.src;
+        TweenMax.to(card, .2, {alpha:1});
+    };
+
+    img.onmouseout = function()
+    {
+        let card = document.getElementById("big_card");
+        TweenMax.to(card, .2, {alpha:0});
+    };
+
     container.appendChild(img);
 }
 
